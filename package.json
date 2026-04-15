@@ -27,7 +27,7 @@
   "scripts": {
   "dev": "remotion studio",
   "build": "remotion bundle src/index.ts build/index.js",
-  "server": "node server.mjs",  // <-- 加入這一行
+  "server": "node server.mjs",
   "upgrade": "remotion upgrade",
   "lint": "eslint src && tsc"
 },
