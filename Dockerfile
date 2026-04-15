@@ -24,7 +24,8 @@ COPY public ./public
 
 RUN npm i
 
-# 安裝 Chrome
-RUN npx remotion browser ensure
+# 確保安裝依賴
+RUN npm install
 
-CMD ["npx", "remotion", "studio"]
+# 啟動我們寫好的 Express 伺服器，這才是對接 n8n 的正確窗口
+CMD ["node", "server.mjs"]
