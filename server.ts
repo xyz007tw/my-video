@@ -1,15 +1,12 @@
 import express, { Request, Response } from 'express';
-import { bundle } from '@remotion/bundler';
 import { renderMediaOnLambda, getRenderProgress } from '@remotion/lambda/client';
-import path from 'path';
-import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = __filename;
 
 // ─── 設定區 ───────────────────────────────────────────────
 const AWS_REGION = process.env.AWS_REGION || 'ap-northeast-1';
@@ -20,7 +17,6 @@ const API_SECRET = process.env.API_SECRET_KEY || '';
 
 // ─── Bundle 快取 ──────────────────────────────────────────
 let cachedServeUrl: string = SERVE_URL;
-let isBundling = false;
 
 // ─── 渲染佇列（防止同時多個 Chromium 造成 OOM）─────────────
 let renderQueue: Promise<any> = Promise.resolve();
@@ -36,7 +32,7 @@ function enqueueRender<T>(fn: () => Promise<T>): Promise<T> {
 
 // ─── API Key 驗證 middleware ──────────────────────────────
 function authMiddleware(req: Request, res: Response, next: any) {
-  if (!API_SECRET) return next(); // 未設定時跳過驗證
+  if (!API_SECRET) return next();
   const key = req.headers['x-api-key'];
   if (key !== API_SECRET) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -84,10 +80,11 @@ app.post('/render', authMiddleware, async (req: Request, res: Response) => {
   }
 
   try {
-    // 加入佇列，確保不同時渲染多個（節省記憶體）
     const result = await enqueueRender(async () => {
       console.log(`🎬 開始渲染: ${compositionName} (${durationInSeconds}s)`);
 
+      // ✅ 修正：renderMediaOnLambda 不支援 chromiumOptions.enableMultiProcessOnLinux
+      // 該選項只適用於本機渲染的 renderMedia()，Lambda 端由 AWS 管理
       const { renderId, bucketName } = await renderMediaOnLambda({
         region: AWS_REGION as any,
         functionName: FUNCTION_NAME,
@@ -105,15 +102,10 @@ app.post('/render', authMiddleware, async (req: Request, res: Response) => {
         maxRetries: 3,
         privacy: 'public',
         outName: outputFilename || `video_${Date.now()}.mp4`,
-        // ✅ 關鍵設定：Linux 多進程模式（大幅提升渲染速度）
-        chromiumOptions: {
-          enableMultiProcessOnLinux: true,
-        },
       });
 
       console.log(`⏳ Lambda 渲染已提交: ${renderId}`);
 
-      // 輪詢等待完成
       const rendered = await pollUntilDone(renderId, bucketName);
       return { ...rendered, renderId, bucketName };
     });
