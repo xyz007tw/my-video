@@ -1,37 +1,31 @@
 {
-  "name": "my-video",
-  "version": "1.0.0",
-  "description": "My Remotion video",
-  "repository": {},
-  "license": "UNLICENSED",
-  "private": true,
+  "name": "remotion-render-server",
+  "version": "2.0.0",
+  "description": "Remotion Lambda Express Server - Zeabur/Railway 部署版",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch server.ts",
+    "build": "tsc --outDir dist",
+    "start": "node dist/server.js",
+    "deploy:lambda": "npx remotion lambda functions deploy --memory=2048 --disk=2048 --timeout=180 --region=ap-northeast-1",
+    "deploy:site": "npx remotion lambda sites create src/index.ts --site-name=video-pipeline --region=ap-northeast-1",
+    "ls:functions": "npx remotion lambda functions ls",
+    "ls:sites": "npx remotion lambda sites ls"
+  },
   "dependencies": {
-    "@remotion/cli": "4.0.448",
-    "@remotion/renderer": "^4.0.448",
-    "@remotion/tailwind-v4": "4.0.448",
-    "body-parser": "^2.2.2",
-    "express": "^5.2.1",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "remotion": "4.0.448",
-    "tailwindcss": "4.0.0"
+    "@remotion/bundler": "^4.0.0",
+    "@remotion/lambda": "^4.0.0",
+    "@remotion/renderer": "^4.0.0",
+    "express": "^4.18.2",
+    "remotion": "^4.0.0"
   },
   "devDependencies": {
-    "@remotion/eslint-config-flat": "4.0.448",
-    "@types/react": "19.2.7",
-    "@types/web": "0.0.166",
-    "eslint": "9.19.0",
-    "prettier": "3.8.1",
-    "typescript": "5.9.3"
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
   },
-  "scripts": {
-  "dev": "remotion studio",
-  "build": "remotion bundle src/index.ts build/index.js",
-  "server": "node server.mjs",
-  "upgrade": "remotion upgrade",
-  "lint": "eslint src && tsc"
-},
-  "sideEffects": [
-    "*.css"
-  ]
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }
