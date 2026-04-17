@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "tsx watch server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "ensure-browser": "node -e \"import('@remotion/renderer').then(m => m.ensureBrowser())\""
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.0.0",
