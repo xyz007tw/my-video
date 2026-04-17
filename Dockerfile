@@ -10,17 +10,20 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-COPY package.json package*.json tsconfig.json* remotion.config.* ./
-
-RUN npm install
-
-RUN npx remotion browser ensure
-
+# 先複製所有檔案
+COPY package*.json tsconfig.json* remotion.config.* ./
 COPY src ./src
 COPY server.ts ./server.ts
 
+# 安裝套件
+RUN npm install
+
+# ✅ 關鍵修正：用直接路徑
+RUN ./node_modules/.bin/remotion browser ensure
+
+# 編譯 TypeScript
 RUN npm run build
 
 EXPOSE 3000
 
-CMD ["node", "dist/server.js"]
+CMD ["node", "--max-old-space-size=3072", "dist/server.js"]
