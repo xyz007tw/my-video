@@ -27,8 +27,8 @@ interface Subtitle {
 }
 
 interface MyCompositionProps {
-  scenes?: Scene[];
-  subtitles?: Subtitle[];
+  scenes?: Scene[] | string;
+  subtitles?: Subtitle[] | string;
   audioSrc?: string;
   bgMusicUrl?: string;
   hook?: string;
@@ -36,21 +36,15 @@ interface MyCompositionProps {
   title?: string;
 }
 
-// 單一場景元件
-const SceneClip: React.FC<{
-  scene: Scene;
-  fps: number;
-}> = ({ scene, fps }) => {
+const SceneClip: React.FC<{ scene: Scene; fps: number }> = ({ scene, fps }) => {
   const frame = useCurrentFrame();
   const duration = (scene.end_sec - scene.start_sec) * fps;
-
   const opacity = interpolate(
     frame,
     [0, 15, duration - 15, duration],
     [0, 1, 1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
-
   return (
     <AbsoluteFill style={{ opacity }}>
       {scene.video_url ? (
@@ -61,7 +55,7 @@ const SceneClip: React.FC<{
       ) : (
         <AbsoluteFill style={{ backgroundColor: "#1a1a2e" }} />
       )}
-      {scene.text_overlay && (
+      {scene.text_overlay ? (
         <AbsoluteFill
           style={{
             justifyContent: "center",
@@ -76,18 +70,16 @@ const SceneClip: React.FC<{
               fontWeight: "bold",
               textAlign: "center",
               textShadow: "2px 2px 8px rgba(0,0,0,0.8)",
-              fontFamily: "Noto Sans TC, sans-serif",
             }}
           >
             {scene.text_overlay}
           </div>
         </AbsoluteFill>
-      )}
+      ) : null}
     </AbsoluteFill>
   );
 };
 
-// 字幕元件
 const SubtitleDisplay: React.FC<{
   subtitles: Subtitle[];
   fps: number;
@@ -96,9 +88,7 @@ const SubtitleDisplay: React.FC<{
   const currentSub = subtitles.find(
     (s) => frame >= s.start * fps && frame < s.end * fps
   );
-
   if (!currentSub) return null;
-
   return (
     <AbsoluteFill
       style={{
@@ -117,7 +107,6 @@ const SubtitleDisplay: React.FC<{
           padding: "12px 24px",
           borderRadius: 8,
           textAlign: "center",
-          fontFamily: "Noto Sans TC, sans-serif",
           maxWidth: "90%",
           lineHeight: 1.4,
         }}
@@ -128,11 +117,9 @@ const SubtitleDisplay: React.FC<{
   );
 };
 
-// Hook 文字元件
 const HookText: React.FC<{ text: string }> = ({ text }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-
   const translateY = spring({
     frame,
     fps,
@@ -140,12 +127,10 @@ const HookText: React.FC<{ text: string }> = ({ text }) => {
     to: 0,
     config: { damping: 12, stiffness: 100 },
   });
-
   const opacity = interpolate(frame, [0, 15, 75, 90], [0, 1, 1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-
   return (
     <AbsoluteFill
       style={{
@@ -158,4 +143,109 @@ const HookText: React.FC<{ text: string }> = ({ text }) => {
         style={{
           transform: `translateY(${translateY}px)`,
           opacity,
-          color:
+          color: "white",
+          fontSize: 56,
+          fontWeight: "900",
+          textAlign: "center",
+          textShadow: "3px 3px 12px rgba(0,0,0,0.9)",
+          lineHeight: 1.3,
+          background: "rgba(0,0,0,0.4)",
+          padding: "20px 30px",
+          borderRadius: 16,
+          border: "2px solid rgba(255,255,255,0.3)",
+        }}
+      >
+        {text}
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+const CTADisplay: React.FC<{ text: string; totalFrames: number }> = ({
+  text,
+  totalFrames,
+}) => {
+  const frame = useCurrentFrame();
+  const opacity = interpolate(
+    frame,
+    [totalFrames - 90, totalFrames - 60, totalFrames - 10, totalFrames],
+    [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
+  return (
+    <AbsoluteFill
+      style={{
+        justifyContent: "flex-end",
+        alignItems: "center",
+        paddingBottom: 200,
+        opacity,
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: "#FF4444",
+          color: "white",
+          fontSize: 44,
+          fontWeight: "bold",
+          padding: "16px 40px",
+          borderRadius: 50,
+          textAlign: "center",
+          boxShadow: "0 4px 20px rgba(255,68,68,0.5)",
+        }}
+      >
+        {text}
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+export const MyComposition: React.FC<MyCompositionProps> = ({
+  scenes = [],
+  subtitles = [],
+  audioSrc = "",
+  bgMusicUrl = "",
+  hook = "",
+  cta = "",
+}) => {
+  const { fps, durationInFrames } = useVideoConfig();
+
+  const parsedScenes: Scene[] =
+    typeof scenes === "string" ? JSON.parse(scenes) : (scenes as Scene[]);
+
+  const parsedSubtitles: Subtitle[] =
+    typeof subtitles === "string"
+      ? JSON.parse(subtitles)
+      : (subtitles as Subtitle[]);
+
+  return (
+    <AbsoluteFill style={{ backgroundColor: "#000" }}>
+      {bgMusicUrl ? <Audio src={bgMusicUrl} volume={0.15} /> : null}
+      {audioSrc ? <Audio src={audioSrc} volume={1} /> : null}
+      {parsedScenes.map((scene) => (
+        <Sequence
+          key={scene.id}
+          from={Math.round(scene.start_sec * fps)}
+          durationInFrames={Math.round((scene.end_sec - scene.start_sec) * fps)}
+        >
+          <SceneClip scene={scene} fps={fps} />
+        </Sequence>
+      ))}
+      {hook ? (
+        <Sequence from={0} durationInFrames={Math.round(3 * fps)}>
+          <HookText text={hook} />
+        </Sequence>
+      ) : null}
+      {parsedSubtitles.length > 0 ? (
+        <SubtitleDisplay subtitles={parsedSubtitles} fps={fps} />
+      ) : null}
+      {cta ? (
+        <Sequence
+          from={durationInFrames - Math.round(3 * fps)}
+          durationInFrames={Math.round(3 * fps)}
+        >
+          <CTADisplay text={cta} totalFrames={Math.round(3 * fps)} />
+        </Sequence>
+      ) : null}
+    </AbsoluteFill>
+  );
+};
