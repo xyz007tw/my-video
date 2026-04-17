@@ -16,7 +16,7 @@ COPY server.ts ./server.ts
 
 RUN npm install
 
-RUN ./node_modules/.bin/remotion browser ensure
+RUN node -e "import('@remotion/renderer').then(m => m.ensureBrowser())"
 
 RUN npm run build
 
