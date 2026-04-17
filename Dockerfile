@@ -16,6 +16,7 @@ COPY server.ts ./server.ts
 
 RUN npm install
 
+# ✅ 新的方式安裝 Chrome
 RUN node -e "import('@remotion/renderer').then(m => m.ensureBrowser())"
 
 RUN npm run build
