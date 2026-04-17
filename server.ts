@@ -93,7 +93,7 @@ app.post('/render', authMiddleware, async (req: Request, res: Response) => {
   const startTime = Date.now();
 
   const {
-    compositionName = 'VideoComposition',
+    compositionName = 'MyComp',
     inputProps = {},
     durationInSeconds = 60,
     fps = 30,
